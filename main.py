@@ -12,7 +12,7 @@ ORANGE = (251, 147, 0)
 BLACK = (0, 0, 0)
 COLOR = [BLACK, RED, ORANGE, BLUE, GREEN, WHITE, YELLOW]
 
-WIDTH, HEIGHT = 600, 600
+WIDTH, HEIGHT = 800, 600
 pygame.display.set_caption("3D")
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 scale = 30
@@ -21,11 +21,122 @@ angle = 0.02
 angleX = 0
 angleY = 0
 angleZ = 0
-speedRotation = 0.005
+speedRotation = 0.1
 isBusy = 0
 c = 0
 
-cube = [6, 6, 6, 6, 6, 6, 6, 6, 6, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 4, 4, 4, 4, 4, 4, 4, 4, 4, 2, 2, 2, 2, 2, 2, 2, 2, 2, 5, 5, 5, 5, 5, 5, 5, 5, 5]
+cube = [6, 6, 6, 6, 6, 6, 6, 6, 6, # Vàng (Upper)
+        3, 3, 3, 3, 3, 3, 3, 3, 3, # Xanh biển (Left)
+        1, 1, 1, 1, 1, 1, 1, 1, 1, # Đỏ (Front)
+        4, 4, 4, 4, 4, 4, 4, 4, 4, # Xanh lá (Right)
+        2, 2, 2, 2, 2, 2, 2, 2, 2,  # Cam (Behind)
+        5, 5, 5, 5, 5, 5, 5, 5, 5]  # Trắng (Down)
+
+matrixRotcw = np.array([[0] * 20] * 20)
+CW = [6, 7, 0, 1, 2, 3, 4, 5, 17, 18, 19, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+for i, value in enumerate(CW):
+    matrixRotcw[i][value] = 1
+matrixRotccw = np.transpose(matrixRotcw)
+
+matrixRotMidcw = np.array([[0] * 12] * 12)
+CWM = [9, 10, 11, 0, 1, 2, 3, 4, 5, 6, 7, 8]
+for i, value in enumerate(CWM):
+    matrixRotMidcw[i][CWM[i]] = 1
+matrixRotMidccw = np.transpose(matrixRotMidcw)
+
+rotU = np.array([0, 1, 2, 5, 8, 7, 6, 3, 38, 37, 36, 29, 28, 27, 20, 19, 18, 11, 10, 9])
+rotD = np.array([45, 46, 47, 50, 53, 52, 51, 48, 24, 25, 26, 33, 34, 35, 42, 43, 44, 15, 16, 17])
+rotF = np.array([18, 19, 20, 23, 26, 25, 24, 21, 6, 7, 8, 27, 30, 33, 47, 46, 45, 17, 14, 11])
+rotB = np.array([36, 37, 38, 41, 44, 43, 42, 39, 2, 1, 0, 9, 12, 15, 51, 52, 53, 35, 32, 29])
+rotR = np.array([27, 28, 29, 32, 35, 34, 33, 30, 8, 5, 2, 36, 39, 42, 53, 50, 47, 26, 23, 20])
+rotL = np.array([9, 10, 11, 14, 17, 16, 15, 12, 0, 3, 6, 18, 21, 24, 45, 48, 51, 44, 41, 38])
+rotE = np.array([12,13,14,21,22,23,30,31,32,39,40,41])
+rotM = np.array([37,40,43,52,49,46,25,22,19,7,4,1])
+rotS = np.array([3,4,5,28,31,34,50,49,48,16,13,10])
+rotA = np.array([rotU, rotD, rotF, rotB, rotR, rotL])
+rotC = np.array([rotM, rotE, rotS])
+
+def cwNccw(key, direction):
+    if direction == 0:
+        T = [0] * 20
+        for i in range(20):
+            T[i] = cube[rotA[key][i]]
+        T = matrixRotcw.dot(T)
+        for i in range(20):
+            cube[rotA[key][i]] = T[i]
+    elif direction == 1:
+        T = [0] * 20
+        for i in range(20):
+            T[i] = cube[rotA[key][i]]
+        T = matrixRotccw.dot(T)
+        for i in range(20):
+            cube[rotA[key][i]] = T[i]
+    elif direction == 2:
+        T = [0] * 20
+        for i in range(20):
+            T[i] = cube[rotA[key][i]]
+        T = matrixRotcw.dot(T)
+        T = matrixRotcw.dot(T)
+        for i in range(20):
+            cube[rotA[key][i]] = T[i]
+def cwNccwMid(key, direction):
+    if direction == 0:
+        T = [0] * 12
+        for i in range(12):
+            T[i] = cube[rotC[key][i]]
+        T = matrixRotMidcw.dot(T)
+        for i in range(12):
+            cube[rotC[key][i]] = T[i]
+    elif direction == 1:
+        T = [0] * 12
+        for i in range(12):
+            T[i] = cube[rotC[key][i]]
+        T = matrixRotMidccw.dot(T)
+        for i in range(12):
+            cube[rotC[key][i]] = T[i]
+    elif direction == 2:
+        T = [0] * 12
+        for i in range(12):
+            T[i] = cube[rotC[key][i]]
+        T = matrixRotMidcw.dot(T)
+        T = matrixRotMidcw.dot(T)
+        for i in range(12):
+            cube[rotC[key][i]] = T[i]
+def rot2D(key):
+    direction = 0
+    if len(key) > 1:
+        if key[1] == "'":
+            direction = 1
+        else:
+            direction = 2
+    if key[0] == "U":
+        cwNccw(0, direction)
+    elif key[0] == "D":
+        cwNccw(1, direction)
+    elif key[0] == "F":
+        cwNccw(2, direction)
+    elif key[0] == "B":
+        cwNccw(3, direction)
+    elif key[0] == "R":
+        cwNccw(4, direction)
+    elif key[0] == "L":
+        cwNccw(5, direction)
+    elif key[0] == "M":
+        cwNccwMid(0, direction)
+    elif key[0] == "E":
+        cwNccwMid(1, direction)
+    elif key[0] == "S":
+        cwNccwMid(2, direction)
+
+def algorithm(algo):
+    global speedRotation
+    step = algo.split(" ")
+    prevtime = time.time()
+    for st in step:
+        while time.time() - prevtime < speedRotation:
+            pygameMain()
+        rot2D(st)
+        prevtime = time.time()
 
 vecpoint = [-3,-1,1,3]
 points = []
@@ -42,7 +153,7 @@ projected_points = [
     [n, n] for n in range(len(points))
 ]
 
-def drawCube(x, y, z, t, points, color):
+def draw(x, y, z, t, points, color):
     pygame.draw.polygon(screen, color,
                         (points[x], points[y], points[z], points[t]), 0)
     pygame.draw.polygon(screen, BLACK,
@@ -51,52 +162,52 @@ def drawFace(color):
     if color == 2:
         for i in range(3):
             k = i
-            drawCube(k, k + 1, k + 5, k + 4, projected_points, COLOR[cube[38+i*3]])
+            draw(k, k + 1, k + 5, k + 4, projected_points, COLOR[cube[38+i*3]])
             k = i + 4
-            drawCube(k, k + 1, k + 5, k + 4, projected_points, COLOR[cube[37+i*3]])
+            draw(k, k + 1, k + 5, k + 4, projected_points, COLOR[cube[37+i*3]])
             k = i + 8
-            drawCube(k, k + 1, k + 5, k + 4, projected_points, COLOR[cube[36+i*3]])
+            draw(k, k + 1, k + 5, k + 4, projected_points, COLOR[cube[36+i*3]])
     elif color == 1:
         for i in range(3):
             k = i + 48
-            drawCube(k, k + 1, k + 5, k + 4, projected_points, COLOR[cube[18+i*3]])
+            draw(k, k + 1, k + 5, k + 4, projected_points, COLOR[cube[18+i*3]])
             k = i + 52
-            drawCube(k, k + 1, k + 5, k + 4, projected_points, COLOR[cube[19+i*3]])
+            draw(k, k + 1, k + 5, k + 4, projected_points, COLOR[cube[19+i*3]])
             k = i + 56
-            drawCube(k, k + 1, k + 5, k + 4, projected_points, COLOR[cube[20+i*3]])
+            draw(k, k + 1, k + 5, k + 4, projected_points, COLOR[cube[20+i*3]])
     elif color == 3:
         for i in range(3):
             k = i
-            drawCube(k, k + 1, k + 17, k + 16, projected_points, COLOR[cube[9+i*3]])
+            draw(k, k + 1, k + 17, k + 16, projected_points, COLOR[cube[9+i*3]])
             k = i + 16
-            drawCube(k, k + 1, k + 17, k + 16, projected_points, COLOR[cube[10+i*3]])
+            draw(k, k + 1, k + 17, k + 16, projected_points, COLOR[cube[10+i*3]])
             k = i + 32
-            drawCube(k, k + 1, k + 17, k + 16, projected_points, COLOR[cube[11+i*3]])
+            draw(k, k + 1, k + 17, k + 16, projected_points, COLOR[cube[11+i*3]])
     elif color == 4:
         for i in range(3):
             k = i +12
-            drawCube(k, k + 1, k + 17, k + 16, projected_points, COLOR[cube[29+i*3]])
+            draw(k, k + 1, k + 17, k + 16, projected_points, COLOR[cube[29+i*3]])
             k = i + 28
-            drawCube(k, k + 1, k + 17, k + 16, projected_points, COLOR[cube[28+i*3]])
+            draw(k, k + 1, k + 17, k + 16, projected_points, COLOR[cube[28+i*3]])
             k = i + 44
-            drawCube(k, k + 1, k + 17, k + 16, projected_points, COLOR[cube[27+i*3]])
+            draw(k, k + 1, k + 17, k + 16, projected_points, COLOR[cube[27+i*3]])
     elif color == 6:
         for i in range(3):
             k = i*4
-            drawCube(k, k + 4, k + 20, k + 16, projected_points, COLOR[cube[i]])
+            draw(k, k + 4, k + 20, k + 16, projected_points, COLOR[cube[i]])
             k = i*4 + 16
-            drawCube(k, k + 4, k + 20, k + 16, projected_points, COLOR[cube[i+3]])
+            draw(k, k + 4, k + 20, k + 16, projected_points, COLOR[cube[i+3]])
             k = i*4 + 32
-            drawCube(k, k + 4, k + 20, k + 16, projected_points, COLOR[cube[i+6]])
+            draw(k, k + 4, k + 20, k + 16, projected_points, COLOR[cube[i+6]])
 
     elif color == 5:
         for i in range(3):
             k = i*4 +3
-            drawCube(k, k + 4, k + 20, k + 16, projected_points, COLOR[cube[i+51]])
+            draw(k, k + 4, k + 20, k + 16, projected_points, COLOR[cube[i+51]])
             k = i*4 + 19
-            drawCube(k, k + 4, k + 20, k + 16, projected_points, COLOR[cube[i+48]])
+            draw(k, k + 4, k + 20, k + 16, projected_points, COLOR[cube[i+48]])
             k = i*4 + 35
-            drawCube(k, k + 4, k + 20, k + 16, projected_points, COLOR[cube[i+45]])
+            draw(k, k + 4, k + 20, k + 16, projected_points, COLOR[cube[i+45]])
 
 clock = pygame.time.Clock()
 def pygameMain():
@@ -111,7 +222,8 @@ def pygameMain():
             if event.key == pygame.K_ESCAPE:
                 pygame.quit()
                 exit()
-
+            if event.key == pygame.K_u:
+                algorithm("U L R B2 F' U' B2")
     keys = pygame.key.get_pressed()
     if keys[pygame.K_UP]:
         angleX += angle
@@ -134,7 +246,7 @@ def pygameMain():
         rotation_z = np.array([
             [cos(angleZ), -sin(angleZ), 0],
             [sin(angleZ), cos(angleZ), 0],
-            [0, 0, 1],
+            [0, 0, 1]
         ])
         rotation_y = np.array([
             [cos(angleY), 0, sin(angleY)],
