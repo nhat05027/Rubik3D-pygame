@@ -2,6 +2,7 @@ import pygame
 import numpy as np
 from math import *
 import time
+import random
 
 WHITE = (255, 255, 255)
 RED = (245, 71, 72)
@@ -12,7 +13,7 @@ ORANGE = (251, 147, 0)
 BLACK = (0, 0, 0)
 COLOR = [BLACK, RED, ORANGE, BLUE, GREEN, WHITE, YELLOW]
 
-WIDTH, HEIGHT = 800, 600
+WIDTH, HEIGHT = 390, 680
 pygame.display.set_caption("3D")
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 scale = 30
@@ -23,7 +24,9 @@ angleY = 0
 angleZ = 0
 speedRotation = 0.1
 isBusy = 0
+countStep = 0
 c = 0
+Text = ""
 
 cube = [6, 6, 6, 6, 6, 6, 6, 6, 6, # Vàng (Upper)
         3, 3, 3, 3, 3, 3, 3, 3, 3, # Xanh biển (Left)
@@ -127,16 +130,66 @@ def rot2D(key):
         cwNccwMid(1, direction)
     elif key[0] == "S":
         cwNccwMid(2, direction)
-
 def algorithm(algo):
-    global speedRotation
+    global countStep,Text,speedRotation
     step = algo.split(" ")
     prevtime = time.time()
     for st in step:
         while time.time() - prevtime < speedRotation:
             pygameMain()
         rot2D(st)
+        print(st, end=" ", flush=True)
+        Text = Text + " " +st
         prevtime = time.time()
+        countStep +=1
+
+ff = ["U", "D", "R", "L", "F", "B"]
+gg = ["", "'", "2"]
+def randomRot():
+    global Text
+    scramble = ""
+    g = 6
+    t = 0
+    while t < 25:
+        i = random.randint(0, 5)
+        j = random.randint(0, 2)
+        if i != g:
+            tx = ff[i] + gg[j]
+            scramble = scramble + tx + " "
+            g = i
+            t +=1
+    scramble = scramble[:-1]
+    algorithm(scramble)
+
+pygame.font.init()
+myfont = pygame.font.SysFont('Comic Sans MS', 13)
+def message(text):
+    global Text
+    t = ""
+    txt = text.split("*/")
+    for i in range(len(txt)):
+        lineMax = 56
+        if len(txt[i]) > lineMax:
+            if txt[i][lineMax-1] == " ":
+                c = lineMax -1
+            elif txt[i][lineMax-2] == " ":
+                c = lineMax - 2
+            else: c = lineMax
+            x = txt[i][(c):]
+            txt[i] = txt[i][0:(c)]
+            if i == len(txt) - 1:
+                txt.append(x)
+            else: txt.insert(i+1, x)
+    for i in range(len(txt)):
+        t = t + "*/" + txt[i]
+    Text = t[2:]
+    if len(txt) == 0 :
+        textsurface = myfont.render(text, False, (0, 0, 0))
+        screen.blit(textsurface,(10,0))
+    if len(txt) > 0 :
+        for i in range(len(txt)):
+            textsurface = myfont.render(txt[i], False, (0, 0, 0))
+            screen.blit(textsurface,(10,i*20))
 
 vecpoint = [-3,-1,1,3]
 points = []
@@ -211,7 +264,7 @@ def drawFace(color):
 
 clock = pygame.time.Clock()
 def pygameMain():
-    global points,projected_points,angle,angleX,angleY,angleZ,zpos
+    global points,projected_points,angle,angleX,angleY,angleZ,zpos,Text
     clock.tick(60)
 
     for event in pygame.event.get():
@@ -222,8 +275,16 @@ def pygameMain():
             if event.key == pygame.K_ESCAPE:
                 pygame.quit()
                 exit()
-            if event.key == pygame.K_u:
-                algorithm("U L R B2 F' U' B2")
+            # if event.key == pygame.K_u:
+            #     algorithm("U L R B2 F' U' B2")
+            if event.key == pygame.K_r:
+                prevTime = time.time()
+                print("")
+                print("Scramble: ", end=" ", flush=True)
+                Text = "Scramble: "
+                randomRot()
+                Text = Text + "*/Step: " + str(countStep) + " (" + str(round(time.time() - prevTime, 5)) + "s)"
+
     keys = pygame.key.get_pressed()
     if keys[pygame.K_UP]:
         angleX += angle
@@ -239,6 +300,7 @@ def pygameMain():
         angleY -= angle
 
     screen.fill(WHITE)
+    message(Text)
 
     i = 0
     for point in points:
